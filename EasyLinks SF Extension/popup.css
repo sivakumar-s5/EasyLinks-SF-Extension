@@ -1,0 +1,103 @@
+body {
+    font-family: Arial, sans-serif;
+    width: 220px;
+    padding: 15px;
+    background-color: #f4f6f9;
+    border-radius: 8px;
+    text-align: center;
+}
+
+h3 {
+    color: #0070d2;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #dfe1e6;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: 0.2s;
+}
+
+input:focus {
+    border-color: #0070d2;
+    box-shadow: 0 0 4px rgba(0, 112, 210, 0.3);
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    color: white;
+    background-color: #0070d2;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #005fb2;
+}
+
+button:active {
+    background-color: #004c91;
+}
+
+#status {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+}
+
+#savedLinksList {
+    list-style: none;
+    padding: 0;
+}
+
+#savedLinksList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    border-bottom: 1px solid #ddd;
+}
+
+.remove-btn {
+    background-color: #ff4d4d; /* Strong red for delete */
+    color: white;
+    border: none;
+    width: 24px;  /* Perfect circle */
+    height: 24px; 
+    border-radius: 50%; /* Makes it round */
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-btn:hover {
+    background-color: #e63939; /* Darker red on hover */
+}
+
+.remove-btn:active {
+    transform: scale(0.9); /* Slight shrink effect when clicked */
+}
+
+.remove-btn:focus {
+    outline: none;
+    box-shadow: 0 0 6px rgba(255, 77, 77, 0.8); /* Subtle glow effect */
+}
+
+
+
