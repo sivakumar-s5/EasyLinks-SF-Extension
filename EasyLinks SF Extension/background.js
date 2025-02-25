@@ -14,48 +14,101 @@ const menuItems = [
   { id: "openFlows", title: "Flows", path: "/lightning/setup/Flows/home" },
   { id: "openProfiles", title: "Profiles", path: "/lightning/setup/EnhancedProfiles/home" },
   { id: "openUsers", title: "Users", path: "/lightning/setup/ManageUsers/home" },
-  { id: "openHome", title: "Home", path: "/lightning/page/home" },
-  { id: "logout", title: "Log Out", path: "/secur/logout.jsp" }
+  { id: "openHome", title: "Home", path: "/lightning/page/home" }
 ];
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "openMenu",
-    title: "EasyLinks SF",
-    contexts: ["all"],
-    documentUrlPatterns: validUrlPatterns
-  });
+// Validate URL against Salesforce domains
+function isValidSalesforceUrl(url) {
+  return validUrlPatterns.some(pattern => new RegExp(pattern.replace(/\*/g, ".*")).test(url));
+}
 
-  menuItems.forEach(({ id, title }) => {
-    chrome.contextMenus.create({
-      id,
-      title,
-      parentId: "openMenu",
-      contexts: ["all"],
-      documentUrlPatterns: validUrlPatterns
+// Initialize Context Menu on Install
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.get("savedLinks", (data) => {
+    let savedLinks = data.savedLinks || [];
+
+    // Add hardcoded menu items only if they don't exist already
+    menuItems.forEach(item => {
+      if (!savedLinks.some(link => link.id === item.id)) {
+        savedLinks.push({ id: item.id, title: item.title, path: item.path });
+      }
+    });
+
+    chrome.storage.local.set({ savedLinks }, () => {
+      createContextMenu(savedLinks);
     });
   });
 });
 
+// Function to Create Context Menu
+function createContextMenu(savedLinks) {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: "openMenu",
+      title: "EasyLinks SF",
+      contexts: ["all"],
+      documentUrlPatterns: validUrlPatterns
+    });
+
+    savedLinks.forEach(({ id, title }) => {
+      chrome.contextMenus.create({
+        id,
+        title,
+        parentId: "openMenu",
+        contexts: ["all"],
+        documentUrlPatterns: validUrlPatterns
+      });
+    });
+  });
+}
+
+// Handle Click Events
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!tab?.url) return;
 
   try {
     const baseUrl = new URL(tab.url).origin;
-    const selectedItem = menuItems.find(item => item.id === info.menuItemId);
+    chrome.storage.local.get("savedLinks", (data) => {
+      const selectedItem = data.savedLinks?.find(link => link.id === info.menuItemId);
 
-    if (selectedItem) {
-      chrome.tabs.create({ url: baseUrl + selectedItem.path });
-    } else {
-      // Open dynamically added links
-      chrome.storage.local.get("savedLinks", (data) => {
-        const savedLink = data.savedLinks?.find(link => link.id === info.menuItemId);
-        if (savedLink) {
-          chrome.tabs.create({ url: savedLink.url });
-        }
-      });
-    }
+      if (selectedItem) {
+        const url = selectedItem.path ? baseUrl + selectedItem.path : selectedItem.url;
+        chrome.tabs.create({ url });
+      }
+    });
   } catch (error) {
     console.error("Error handling menu item click:", error);
+  }
+});
+
+// Handle Adding Links
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "addLink") {
+    chrome.storage.local.get("savedLinks", (data) => {
+      let savedLinks = data.savedLinks || [];
+      const newLink = { id: Date.now().toString(), title: message.title, url: message.url };
+
+      savedLinks.push(newLink);
+      chrome.storage.local.set({ savedLinks }, () => {
+        createContextMenu(savedLinks);
+        sendResponse({ success: true });
+      });
+    });
+    return true;
+  }
+
+  if (message.action === "removeLink") {
+    chrome.storage.local.get("savedLinks", (data) => {
+      let savedLinks = data.savedLinks || [];
+      savedLinks = savedLinks.filter(link => link.id !== message.id);
+
+      chrome.storage.local.set({ savedLinks }, () => {
+        createContextMenu(savedLinks);
+        chrome.contextMenus.remove(message.id, () => {
+          sendResponse({ success: true });
+        });
+      });
+    });
+    return true;
   }
 });
