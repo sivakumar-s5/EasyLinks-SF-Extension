@@ -1,0 +1,15 @@
+{
+    "manifest_version": 3,
+    "name": "EasyLinks Salesforce By SK",
+    "version": "1.0",
+    "description": "Adds a right-click option to open a developer console,setup and so on.",
+    "permissions": [
+      "contextMenus",
+      "tabs",
+      "activeTab"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    }
+  }
+  
