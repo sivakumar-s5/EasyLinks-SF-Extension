@@ -86,7 +86,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "addLink") {
     chrome.storage.local.get("savedLinks", (data) => {
       let savedLinks = data.savedLinks || [];
-      const newLink = { id: Date.now().toString(), title: message.title, url: message.url };
+      const newLink = { id: Date.now().toString(), title: message.title, path: message.path };
 
       savedLinks.push(newLink);
       chrome.storage.local.set({ savedLinks }, () => {
@@ -96,19 +96,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
-
   if (message.action === "removeLink") {
     chrome.storage.local.get("savedLinks", (data) => {
-      let savedLinks = data.savedLinks || [];
-      savedLinks = savedLinks.filter(link => link.id !== message.id);
+        let savedLinks = data.savedLinks || [];
+        const linkToRemove = savedLinks.find(link => link.id === message.id);
 
-      chrome.storage.local.set({ savedLinks }, () => {
-        createContextMenu(savedLinks);
-        chrome.contextMenus.remove(message.id, () => {
-          sendResponse({ success: true });
+        if (!linkToRemove) {
+            sendResponse({ success: false, error: "Link not found" });
+            return;
+        }
+
+        savedLinks = savedLinks.filter(link => link.id !== message.id);
+
+        chrome.storage.local.set({ savedLinks }, () => {
+            createContextMenu(savedLinks);
+            
+            // Check if the menu item exists before removing it
+            chrome.contextMenus.remove(message.id, () => {
+                if (chrome.runtime.lastError) {
+                    console.warn("Menu item not found:", chrome.runtime.lastError);
+                }
+                sendResponse({ success: true });
+            });
         });
-      });
     });
     return true;
-  }
-});
+}
+
+  if (message.action === "updateContextMenu") {
+    chrome.storage.local.get("savedLinks", (data) => {
+        createContextMenu(data.savedLinks || []);
+    });
+    return true;
+}
+
+  });
+

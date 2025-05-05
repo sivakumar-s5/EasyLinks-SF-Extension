@@ -9,19 +9,20 @@ body {
 
 h3 {
     color: #0070d2;
-    margin-bottom: 15px;
-    font-size: 18px;
+    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: bold;
 }
 
 input {
     width: 100%;
-    padding: 8px;
-    margin-bottom: 10px;
+    padding: 6px;
+    margin-bottom: 8px;
     border: 1px solid #dfe1e6;
-    border-radius: 6px;
-    font-size: 14px;
+    border-radius: 5px;
+    font-size: 13px;
     outline: none;
-    transition: 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 input:focus {
@@ -31,14 +32,14 @@ input:focus {
 
 button {
     width: 100%;
-    padding: 10px;
-    font-size: 14px;
+    padding: 8px;
+    font-size: 13px;
     color: white;
     background-color: #0070d2;
     border: none;
-    border-radius: 6px;
+    border-radius: 5px;
     cursor: pointer;
-    transition: 0.2s;
+    transition: background-color 0.2s, transform 0.1s;
     font-weight: bold;
 }
 
@@ -48,56 +49,84 @@ button:hover {
 
 button:active {
     background-color: #004c91;
+    transform: scale(0.98);
 }
 
 #status {
-    margin-top: 10px;
-    font-size: 14px;
+    margin-top: 8px;
+    font-size: 13px;
     font-weight: bold;
     text-align: center;
 }
 
+/* Compact and modern list styling */
 #savedLinksList {
     list-style: none;
     padding: 0;
+    margin-top: 8px;
 }
 
 #savedLinksList li {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px;
-    border-bottom: 1px solid #ddd;
+    padding: 6px 8px;
+    background: white;
+    border-radius: 5px;
+    border: 1px solid #dfe1e6;
+    margin-bottom: 4px;
+    font-size: 13px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    cursor: grab;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
+/* Hover effect for list items */
+#savedLinksList li:hover {
+    background: #eef4ff;
+    box-shadow: 0 1px 4px rgba(0, 112, 210, 0.2);
+}
+
+/* Dragging effect */
+#savedLinksList li:active {
+    cursor: grabbing;
+    transform: scale(1.02);
+    box-shadow: 0 2px 6px rgba(0, 112, 210, 0.3);
+}
+
+/* Remove Button */
 .remove-btn {
-    background-color: #ff4d4d; /* Strong red for delete */
+    background-color: #ff4d4d;
     color: white;
     border: none;
-    width: 24px;  /* Perfect circle */
-    height: 24px; 
-    border-radius: 50%; /* Makes it round */
-    font-size: 14px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 12px;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    transition: background-color 0.2s, transform 0.1s;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+/* Button hover */
 .remove-btn:hover {
-    background-color: #e63939; /* Darker red on hover */
+    background-color: #e63939;
 }
 
+/* Click effect */
 .remove-btn:active {
-    transform: scale(0.9); /* Slight shrink effect when clicked */
+    transform: scale(0.85);
 }
 
+/* Button focus effect */
 .remove-btn:focus {
     outline: none;
-    box-shadow: 0 0 6px rgba(255, 77, 77, 0.8); /* Subtle glow effect */
+    box-shadow: 0 0 4px rgba(255, 77, 77, 0.8);
 }
-
-
-
