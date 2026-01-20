@@ -62,9 +62,10 @@ function createContextMenu(savedLinks) {
   });
 }
 
-// Handle Click Events
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+//extracting the common logic of opening salesforce link
+function openSalesforceLink(tab, menuItemId) {
   if (!tab?.url) return;
+  if (!isValidSalesforceUrl(tab.url)) return;
 
   try {
     const baseUrl = new URL(tab.url).origin;
@@ -72,7 +73,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
     chrome.storage.local.get("savedLinks", (data) => {
       const selectedItem = data.savedLinks?.find(
-        link => link.id === info.menuItemId
+        link => link.id === menuItemId
       );
 
       if (!selectedItem) return;
@@ -81,27 +82,88 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         ? baseUrl + selectedItem.path
         : selectedItem.url;
 
-      // 1️⃣ Create tab normally
       chrome.tabs.create({ url }, (newTab) => {
-        if (
-          chrome.runtime.lastError ||
-          !newTab ||
-          currentGroupId === -1
-        ) {
-          return;
-        }
+        if (chrome.runtime.lastError || !newTab) return;
 
-        // 2️⃣ Move tab into the existing group
-        chrome.tabs.group({
-          tabIds: newTab.id,
-          groupId: currentGroupId
-        });
+        if (currentGroupId !== -1) {
+          chrome.tabs.group({
+            tabIds: newTab.id,
+            groupId: currentGroupId
+          });
+        }
       });
     });
-  } catch (error) {
-    console.error("Error handling menu item click:", error);
+  } catch (e) {
+    console.error("Error opening Salesforce link:", e);
   }
+}
+
+
+// Handle Click Events
+// chrome.contextMenus.onClicked.addListener((info, tab) => {
+//   if (!tab?.url) return;
+
+//   try {
+//     const baseUrl = new URL(tab.url).origin;
+//     const currentGroupId = tab.groupId;
+
+//     chrome.storage.local.get("savedLinks", (data) => {
+//       const selectedItem = data.savedLinks?.find(
+//         link => link.id === info.menuItemId
+//       );
+
+//       if (!selectedItem) return;
+
+//       const url = selectedItem.path
+//         ? baseUrl + selectedItem.path
+//         : selectedItem.url;
+
+//       // 1️⃣ Create tab normally
+//       chrome.tabs.create({ url }, (newTab) => {
+//         if (
+//           chrome.runtime.lastError ||
+//           !newTab ||
+//           currentGroupId === -1
+//         ) {
+//           return;
+//         }
+
+//         // 2️⃣ Move tab into the existing group
+//         chrome.tabs.group({
+//           tabIds: newTab.id,
+//           groupId: currentGroupId
+//         });
+//       });
+//     });
+//   } catch (error) {
+//     console.error("Error handling menu item click:", error);
+//   }
+// });
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  openSalesforceLink(tab, info.menuItemId);
 });
+
+// chrome.commands.onCommand.addListener((command) => {
+//   if (command === "openDevConsole") {
+//     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+//       openSalesforceLink(tabs[0], "openDevConsole");
+//     });
+//   }
+// });
+
+//Hnadle Hot-keys commands 
+chrome.commands.onCommand.addListener((command) => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs || !tabs.length) return;
+
+    // command name = menu item id
+    openSalesforceLink(tabs[0], command);
+  });
+});
+
+
+
 
 // Handle Adding Links
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
