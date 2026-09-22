@@ -7,13 +7,33 @@
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <h2>EasyLinks SF</h2>
-    <form id="addLinkForm">
-        <input type="text" id="linkTitle" placeholder="Enter title..." required>
-        <button type="submit" id="addLink">Add Current Page</button>
+    <header class="header">
+        <img class="header-icon" src="icons/salesforce_icon_32.png" alt="" width="24" height="24">
+        <div class="header-text">
+            <h1>EasyLinks SF</h1>
+            <p class="header-sub" id="pageHint">Open a Salesforce page to save it</p>
+        </div>
+    </header>
+
+    <form id="addLinkForm" class="add-form" autocomplete="off">
+        <input type="text" id="linkTitle" placeholder="Name this page…" maxlength="60" required>
+        <button type="submit" id="addLink" title="Save the current page">
+            <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span>Add</span>
+        </button>
     </form>
-    <p id="status"></p>
-    <ul id="savedLinksList"></ul>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <div class="list-header">
+        <span>Saved links</span>
+        <span class="list-count" id="linkCount"></span>
+    </div>
+    <ul id="savedLinksList" class="link-list"></ul>
+    <p id="emptyState" class="empty-state" hidden>No links yet. Open a Salesforce page and add it above.</p>
+
+    <footer class="footer">Drag to reorder · right-click any Salesforce page to use</footer>
+
     <script src="popup.js"></script>
 </body>
 </html>

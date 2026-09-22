@@ -6,6 +6,10 @@ const validHostSuffixes = [
     ".visualforce.com"
 ];
 
+// Static inline SVGs (no user data) for list item controls
+const DRAG_ICON = '<svg width="10" height="14" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="1.5"/><circle cx="7" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="7" cy="13" r="1.5"/></svg>';
+const CLOSE_ICON = '<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
 function isValidSalesforceUrl(url) {
     try {
         const { protocol, hostname } = new URL(url);
@@ -17,7 +21,29 @@ function isValidSalesforceUrl(url) {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadSavedLinks();
+    showPageHint();
 });
+
+// Show which page will be saved, or a nudge if not on Salesforce
+function showPageHint() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const hintEl = document.getElementById("pageHint");
+        const input = document.getElementById("linkTitle");
+        const url = tabs[0]?.url;
+
+        if (!url || !isValidSalesforceUrl(url)) {
+            hintEl.textContent = "Open a Salesforce page to save it";
+            input.disabled = true;
+            document.getElementById("addLink").disabled = true;
+            return;
+        }
+
+        const { hostname, pathname } = new URL(url);
+        hintEl.textContent = hostname + pathname;
+        hintEl.title = url;
+        input.focus();
+    });
+}
 
 document.getElementById("addLinkForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -59,23 +85,43 @@ function loadSavedLinks() {
         const listEl = document.getElementById("savedLinksList");
         listEl.replaceChildren();
 
+        document.getElementById("linkCount").textContent = savedLinks.length || "";
+        document.getElementById("emptyState").hidden = savedLinks.length > 0;
+
         savedLinks.forEach((link) => {
             const li = document.createElement("li");
             li.setAttribute("draggable", "true");
             li.dataset.id = link.id;
             li.classList.add("draggable-item");
 
+            const handle = document.createElement("span");
+            handle.classList.add("drag-handle");
+            handle.setAttribute("aria-hidden", "true");
+            handle.innerHTML = DRAG_ICON;
+
+            const text = document.createElement("span");
+            text.classList.add("link-text");
+
             const titleEl = document.createElement("span");
+            titleEl.classList.add("link-title");
             titleEl.textContent = link.title;
+
+            const pathEl = document.createElement("span");
+            pathEl.classList.add("link-path");
+            pathEl.textContent = link.path || link.url || "";
+            pathEl.title = pathEl.textContent;
+
+            text.append(titleEl, pathEl);
 
             const removeBtn = document.createElement("button");
             removeBtn.type = "button";
             removeBtn.classList.add("remove-btn");
-            removeBtn.dataset.id = link.id;
-            removeBtn.textContent = "❌";
+            removeBtn.title = `Remove "${link.title}"`;
+            removeBtn.setAttribute("aria-label", `Remove ${link.title}`);
+            removeBtn.innerHTML = CLOSE_ICON;
             removeBtn.addEventListener("click", () => removeLink(link.id));
 
-            li.append(titleEl, removeBtn);
+            li.append(handle, text, removeBtn);
             listEl.appendChild(li);
         });
 
@@ -93,7 +139,7 @@ function addDragAndDropEvents() {
         item.addEventListener("dragstart", (event) => {
             draggedItem = event.target;
             originalOrder = Array.from(listEl.children).map(el => el.dataset.id);
-            event.target.style.opacity = "0.5";
+            event.target.classList.add("dragging");
         });
 
         item.addEventListener("dragover", (event) => {
@@ -111,7 +157,7 @@ function addDragAndDropEvents() {
         });
 
         item.addEventListener("dragend", () => {
-            draggedItem.style.opacity = "1";
+            draggedItem.classList.remove("dragging");
             const newOrder = Array.from(listEl.children).map(el => el.dataset.id);
             // Only persist when the order actually changed
             if (newOrder.some((id, i) => id !== originalOrder[i])) {
@@ -146,11 +192,14 @@ function removeLink(linkId) {
 }
 
 // Utility Function to Show Messages
+let statusTimer = null;
 function showMessage(text, color) {
     const statusEl = document.getElementById("status");
     statusEl.textContent = text;
-    statusEl.style.color = color;
-    setTimeout(() => {
+    statusEl.classList.toggle("ok", color === "green");
+    statusEl.classList.toggle("err", color === "red");
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => {
         statusEl.textContent = "";
     }, 3000);
 }
