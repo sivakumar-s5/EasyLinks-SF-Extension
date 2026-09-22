@@ -7,9 +7,9 @@ body {
     text-align: center;
 }
 
-h3 {
+h2 {
     color: #0070d2;
-    margin-bottom: 12px;
+    margin: 0 0 12px;
     font-size: 16px;
     font-weight: bold;
 }

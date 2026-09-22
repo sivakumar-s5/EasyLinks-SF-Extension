@@ -1,0 +1,5 @@
+# Salesforce CLI cache
+.sf/
+
+# macOS
+.DS_Store

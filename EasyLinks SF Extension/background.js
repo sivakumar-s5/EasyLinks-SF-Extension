@@ -7,6 +7,15 @@ const validUrlPatterns = [
   "https://*.visualforce.com/*"
 ];
 
+// Hostname suffixes derived from validUrlPatterns, used for strict origin checks
+const validHostSuffixes = [
+  ".salesforce.com",
+  ".salesforce-setup.com",
+  ".force.com",
+  ".cloudforce.com",
+  ".visualforce.com"
+];
+
 const menuItems = [
   { id: "openDevConsole", title: "Developer Console", path: "/_ui/common/apex/debug/ApexCSIPage" },
   { id: "openSetup", title: "Setup", path: "/lightning/setup/SetupOneHome/home" },
@@ -17,13 +26,18 @@ const menuItems = [
   { id: "openHome", title: "Home", path: "/lightning/page/home" }
 ];
 
-// Validate URL against Salesforce domains
+// Validate URL against Salesforce domains (https only, hostname suffix match)
 function isValidSalesforceUrl(url) {
-  return validUrlPatterns.some(pattern => new RegExp(pattern.replace(/\*/g, ".*")).test(url));
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol === "https:" && validHostSuffixes.some(suffix => hostname.endsWith(suffix));
+  } catch {
+    return false;
+  }
 }
 
-// Initialize Context Menu on Install
-chrome.runtime.onInstalled.addListener(() => {
+// Merge hardcoded menu items into storage and (re)build the context menu
+function initMenus() {
   chrome.storage.local.get("savedLinks", (data) => {
     let savedLinks = data.savedLinks || [];
 
@@ -38,7 +52,10 @@ chrome.runtime.onInstalled.addListener(() => {
       createContextMenu(savedLinks);
     });
   });
-});
+}
+
+chrome.runtime.onInstalled.addListener(initMenus);
+chrome.runtime.onStartup.addListener(initMenus);
 
 // Function to Create Context Menu
 function createContextMenu(savedLinks) {
@@ -98,61 +115,12 @@ function openSalesforceLink(tab, menuItemId) {
   }
 }
 
-
 // Handle Click Events
-// chrome.contextMenus.onClicked.addListener((info, tab) => {
-//   if (!tab?.url) return;
-
-//   try {
-//     const baseUrl = new URL(tab.url).origin;
-//     const currentGroupId = tab.groupId;
-
-//     chrome.storage.local.get("savedLinks", (data) => {
-//       const selectedItem = data.savedLinks?.find(
-//         link => link.id === info.menuItemId
-//       );
-
-//       if (!selectedItem) return;
-
-//       const url = selectedItem.path
-//         ? baseUrl + selectedItem.path
-//         : selectedItem.url;
-
-//       // 1️⃣ Create tab normally
-//       chrome.tabs.create({ url }, (newTab) => {
-//         if (
-//           chrome.runtime.lastError ||
-//           !newTab ||
-//           currentGroupId === -1
-//         ) {
-//           return;
-//         }
-
-//         // 2️⃣ Move tab into the existing group
-//         chrome.tabs.group({
-//           tabIds: newTab.id,
-//           groupId: currentGroupId
-//         });
-//       });
-//     });
-//   } catch (error) {
-//     console.error("Error handling menu item click:", error);
-//   }
-// });
-
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   openSalesforceLink(tab, info.menuItemId);
 });
 
-// chrome.commands.onCommand.addListener((command) => {
-//   if (command === "openDevConsole") {
-//     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-//       openSalesforceLink(tabs[0], "openDevConsole");
-//     });
-//   }
-// });
-
-//Hnadle Hot-keys commands 
+// Handle Hot-key commands
 chrome.commands.onCommand.addListener((command) => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs || !tabs.length) return;
@@ -162,15 +130,12 @@ chrome.commands.onCommand.addListener((command) => {
   });
 });
 
-
-
-
-// Handle Adding Links
+// Handle Adding / Removing / Reordering Links
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "addLink") {
     chrome.storage.local.get("savedLinks", (data) => {
       let savedLinks = data.savedLinks || [];
-      const newLink = { id: Date.now().toString(), title: message.title, path: message.path };
+      const newLink = { id: crypto.randomUUID(), title: message.title, path: message.path };
 
       savedLinks.push(newLink);
       chrome.storage.local.set({ savedLinks }, () => {
@@ -180,39 +145,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+
   if (message.action === "removeLink") {
     chrome.storage.local.get("savedLinks", (data) => {
-        let savedLinks = data.savedLinks || [];
-        const linkToRemove = savedLinks.find(link => link.id === message.id);
+      let savedLinks = data.savedLinks || [];
 
-        if (!linkToRemove) {
-            sendResponse({ success: false, error: "Link not found" });
-            return;
-        }
+      if (!savedLinks.some(link => link.id === message.id)) {
+        sendResponse({ success: false, message: "Link not found" });
+        return;
+      }
 
-        savedLinks = savedLinks.filter(link => link.id !== message.id);
+      savedLinks = savedLinks.filter(link => link.id !== message.id);
 
-        chrome.storage.local.set({ savedLinks }, () => {
-            createContextMenu(savedLinks);
-            
-            // Check if the menu item exists before removing it
-            chrome.contextMenus.remove(message.id, () => {
-                if (chrome.runtime.lastError) {
-                    console.warn("Menu item not found:", chrome.runtime.lastError);
-                }
-                sendResponse({ success: true });
-            });
-        });
+      chrome.storage.local.set({ savedLinks }, () => {
+        // createContextMenu does removeAll + rebuild, so the item is gone
+        createContextMenu(savedLinks);
+        sendResponse({ success: true });
+      });
     });
     return true;
-}
+  }
 
   if (message.action === "updateContextMenu") {
     chrome.storage.local.get("savedLinks", (data) => {
-        createContextMenu(data.savedLinks || []);
+      createContextMenu(data.savedLinks || []);
+      sendResponse({ success: true });
     });
     return true;
-}
-
-  });
-
+  }
+});

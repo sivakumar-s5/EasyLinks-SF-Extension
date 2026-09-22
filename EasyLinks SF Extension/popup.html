@@ -8,8 +8,10 @@
 </head>
 <body>
     <h2>EasyLinks SF</h2>
-    <input type="text" id="linkTitle" placeholder="Enter title..." required>
-    <button id="addLink">Add Current Page</button>
+    <form id="addLinkForm">
+        <input type="text" id="linkTitle" placeholder="Enter title..." required>
+        <button type="submit" id="addLink">Add Current Page</button>
+    </form>
     <p id="status"></p>
     <ul id="savedLinksList"></ul>
     <script src="popup.js"></script>
